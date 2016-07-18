@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.concurrent.ThreadLocalRandom;
 
 @WebServlet("/")
 public class DefaultServlet extends HttpServlet {
@@ -13,38 +14,53 @@ public class DefaultServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-        
+        StringBuffer buffer = new StringBuffer("Request processing started\n");
         response.getWriter().println("Request processing started");
+
+        // Parsing
         response.getWriter().print(Work.local(2));
-        response.getWriter().print(Request.Get(Work.url2).execute().returnContent().asString());
-        response.getWriter().print(Work.local(4));
-        response.getWriter().print(Request.Get(Work.url10).execute().returnContent().asString());
-        response.getWriter().print(Work.local(2));
+
+        // 10% requests fail to parse
+        if (ThreadLocalRandom.current().nextDouble(1) < 0.1) {
+            buffer.append("Failed to parse\n");
+            sendResponse(response, buffer);
+            return;
+        }
+
+        // 10% requests are black listed
+        if (ThreadLocalRandom.current().nextDouble(1) < 0.1) {
+            buffer.append("black listed\n");
+            sendResponse(response, buffer);
+            return;
+        }
+
+        // Get user profile
+        buffer.append(Request.Get(Work.url2).execute().returnContent().asString());
+
+        // 30% requests dropped by early exit
+        if (ThreadLocalRandom.current().nextDouble(1) < 0.3) {
+            buffer.append("Eliminated by early exit\n");
+            sendResponse(response, buffer);
+            return;
+        }
+
+        // Get contextual info
+        buffer.append(Request.Get(Work.url2).execute().returnContent().asString());
+
+        // Prepare ad server request
+        buffer.append(Work.local(4));
         
-//        Work.local(2);
-//        response.getWriter().println("Local work completed");
+        // Call ad server
+        buffer.append(Request.Get(Work.url10).execute().returnContent().asString());
         
-//        if (ThreadLocalRandom.current().nextDouble(1) < 0.5) {  // only about 50% of the requests make the remote call
-//            String message = Request.Get(Work.url2).execute().returnContent().asString();
-//            response.getWriter().println(message);
-//        }
+        // Prepare response
+        buffer.append(Work.local(2));
+        
+        // Send response
+        sendResponse(response, buffer);
     }
 
-    /**
-     * Simulate some non-blocking work that involves using local compute resources
-     *
-     * @param weight indicates the amount of work to be done. Minimum value is 1
-     */
-    static public void localWork(int weight) {
-        if (weight < 1) {
-            weight = 1;
-        }
-
-        for (int i = 0; i < weight; i++) {
-            String a = "abc";
-            for (int j = 0; j < 100; j++) {
-                a = a + (j * j);
-            }
-        }
+    private void sendResponse(HttpServletResponse response, StringBuffer buffer) throws IOException {
+        response.getWriter().println(buffer.toString());
     }
 }

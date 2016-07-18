@@ -1,7 +1,7 @@
 public class Work {
 
-    public static final String url2 = "http://127.0.0.1:9090/delayed2";
-    public static final String url10 = "http://127.0.0.1:9090/delayed10";
+    public static final String url2 = "http://172.16.204.56:9090/delayed2";
+    public static final String url10 = "http://172.16.204.56:9090/delayed10";
     
 
     /**
